@@ -109,7 +109,7 @@ namespace API.Controllers
             
             var token = GenerateToken(user);
 
-            return Ok(new AuthResponseDto{
+            return Ok(new AuthResponseDto {
                 Token = token,
                 IsSuccess = true,
                 Message = "Login Success."
@@ -152,5 +152,32 @@ namespace API.Controllers
             return tokenHandler.WriteToken(token);
         }
         
+        //api/account/detail
+        [HttpGet("detail")]
+        [Authorize]
+        public async Task<ActionResult<UserDetailDto>> GetUserDetail()
+        {
+            var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var user = await _userManager.FindByIdAsync(currentUserId!);
+
+
+            if (user is null)
+            {
+                return NotFound(new AuthResponseDto{
+                    IsSuccess = false,
+                    Message = "User not found"
+                });
+            }
+
+            return Ok(new UserDetailDto {
+                Id = user.Id,
+                Email = user.Email,
+                FullName = user.FullName,
+                Roles = [..await _userManager.GetRolesAsync(user)],
+                PhoneNumber = user.PhoneNumber,
+                PhoneNumberConfirmed = user.PhoneNumberConfirmed,
+                AccessFailedCount = user.AccessFailedCount,
+            });
+        }
     }
 }
