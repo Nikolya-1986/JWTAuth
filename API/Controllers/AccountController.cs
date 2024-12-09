@@ -1,13 +1,12 @@
 using Microsoft.AspNetCore.Authorization;
+using System.IdentityModel.Tokens.Jwt;
+using Microsoft.IdentityModel.Tokens;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
+using System.Text;
 using API.Models;
 using API.Dtos;
-using Microsoft.EntityFrameworkCore.Metadata.Internal;
-using System.IdentityModel.Tokens.Jwt;
-using System.Text;
-using System.Security.Claims;
-using Microsoft.IdentityModel.Tokens;
 
 namespace API.Controllers
 {
@@ -150,34 +149,6 @@ namespace API.Controllers
             var token = tokenHandler.CreateToken(tokenDescriptor);
 
             return tokenHandler.WriteToken(token);
-        }
-        
-        //api/account/detail
-        [HttpGet("detail")]
-        [Authorize]
-        public async Task<ActionResult<UserDetailDto>> GetUserDetail()
-        {
-            var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            var user = await _userManager.FindByIdAsync(currentUserId!);
-
-
-            if (user is null)
-            {
-                return NotFound(new AuthResponseDto{
-                    IsSuccess = false,
-                    Message = "User not found"
-                });
-            }
-
-            return Ok(new UserDetailDto {
-                Id = user.Id,
-                Email = user.Email,
-                FullName = user.FullName,
-                Roles = [..await _userManager.GetRolesAsync(user)],
-                PhoneNumber = user.PhoneNumber,
-                PhoneNumberConfirmed = user.PhoneNumberConfirmed,
-                AccessFailedCount = user.AccessFailedCount,
-            });
         }
     }
 }
