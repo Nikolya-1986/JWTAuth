@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using API.Models;
 using API.Dtos;
+using Microsoft.EntityFrameworkCore;
 
 namespace API.Controllers
 {
@@ -20,7 +21,7 @@ namespace API.Controllers
             _userManager=userManager;
         }
 
-        [HttpPost]
+        [HttpPost("create")]
         public async Task<IActionResult> CreateRole([FromBody] CreateRoleDto createRoleDto)
         {
             if (string.IsNullOrEmpty(createRoleDto.RoleName))
@@ -45,5 +46,19 @@ namespace API.Controllers
             return BadRequest("Role creation failed.");
         }
 
+
+        [HttpGet("roleList")]
+        public async Task<ActionResult<IEnumerable<RoleResponseDto>>> GetRoles()
+        {
+            // list of roles with total users in each role 
+            var roles = await _roleManager.Roles.Select(r => new RoleResponseDto
+            {
+                Id = r.Id,
+                Name = r.Name,
+                TotalUsers = _userManager.GetUsersInRoleAsync(r.Name!).Result.Count
+            }).ToListAsync();
+
+            return Ok(roles);
+        }
     }
 }
