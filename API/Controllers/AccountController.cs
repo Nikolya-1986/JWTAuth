@@ -7,6 +7,9 @@ using System.Security.Claims;
 using System.Text;
 using API.Models;
 using API.Dtos;
+using RestSharp;
+using System.Net;
+using Helpers;
 
 namespace API.Controllers
 {
@@ -113,6 +116,45 @@ namespace API.Controllers
                 IsSuccess = true,
                 Message = "Login Success."
             });
+        }
+
+        [AllowAnonymous]
+        [HttpPost("forgot-password")]
+        public async Task<ActionResult> ForgotPassword(ForgotPasswordDto forgotPasswordDto)
+        {
+            var user = await _userManager.FindByEmailAsync(forgotPasswordDto.Email);
+
+            if (user is null)
+            {
+                return Ok(new AuthResponseDto
+                {
+                    IsSuccess = false,
+                    Message = "User does not exist with this email"
+                });
+            }
+
+            var token = await _userManager.GeneratePasswordResetTokenAsync(user);
+            var resetLink = $"http://localhost:4200/reset-password?email={user.Email}&token={WebUtility.UrlEncode(token)}";
+            EmailHelper emailHelper = new EmailHelper();
+            RestResponse resetPassword = emailHelper.SendEmailPasswordReset(user, resetLink);
+
+            if (resetPassword.IsSuccessful)
+            {
+                return Ok(new AuthResponseDto
+                {
+                    IsSuccess = true,
+                    Message = "Email sent with password reset link. Please check your email."
+                });
+            }
+            else
+            {
+                return BadRequest(new AuthResponseDto
+                {
+                    IsSuccess = false,
+                    Message = resetPassword.Content!.ToString()
+                });
+            }
+
         }
 
         private string GenerateToken(AppUser user){

@@ -23,6 +23,7 @@
           "Microsoft.Extensions.DependencyInjection": "8.0.0",
           "Newtonsoft.Json": "13.0.3",
           "RandomString4Net": "1.8.0",
+          "RestSharp": "112.1.0",
           "Swashbuckle.AspNetCore": "6.4.0"
         },
         "runtime": {
@@ -911,6 +912,14 @@
           "lib/net8.0/RandomString4Net.dll": {
             "assemblyVersion": "1.8.0.0",
             "fileVersion": "1.8.0.0"
+          }
+        }
+      },
+      "RestSharp/112.1.0": {
+        "runtime": {
+          "lib/net8.0/RestSharp.dll": {
+            "assemblyVersion": "112.1.0.0",
+            "fileVersion": "112.1.0.0"
           }
         }
       },
@@ -1915,6 +1924,13 @@
       "sha512": "sha512-K1BGz/+TI1BheJocKGv2OLa5clA8sSZfnDicTXgBIXWz59RT26ektCn7yvVv5AeNYAMA+LMPYSRQwHRztM/52w==",
       "path": "randomstring4net/1.8.0",
       "hashPath": "randomstring4net.1.8.0.nupkg.sha512"
+    },
+    "RestSharp/112.1.0": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-bOUGNZqhhv/QeCXHTKEUil846yBjwWXpzPKjO67kFvaAOoF361z7jLY5BMnuZ6WD2WQRA750sNMcK7MSPCQ5Mg==",
+      "path": "restsharp/112.1.0",
+      "hashPath": "restsharp.112.1.0.nupkg.sha512"
     },
     "SQLitePCLRaw.bundle_e_sqlite3/2.1.6": {
       "type": "package",

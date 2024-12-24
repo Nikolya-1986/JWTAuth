@@ -8,6 +8,8 @@ using API.Dtos;
 
 namespace API.Controllers
 {
+    [ApiController]
+    [Route("api/[controller]")]
     public class UserController : ControllerBase
     {
         private readonly UserManager<AppUser> _userManager;
