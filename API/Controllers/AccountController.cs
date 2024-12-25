@@ -157,6 +157,40 @@ namespace API.Controllers
 
         }
 
+        [AllowAnonymous]
+        [HttpPost("reset-password")]
+        public async Task<IActionResult> ResetPassword(ResetPasswordDto resetPasswordDto)
+        {
+            var user = await _userManager.FindByEmailAsync(resetPasswordDto.Email);
+            // resetPasswordDto.Token = WebUtility.UrlDecode(resetPasswordDto.Token);
+
+            if (user is null)
+            {
+                return BadRequest(new AuthResponseDto
+                {
+                    IsSuccess = false,
+                    Message = "User does not exist with this email"
+                });
+            }
+
+            var result = await _userManager.ResetPasswordAsync(user, resetPasswordDto.Token, resetPasswordDto.NewPassword);
+
+            if (result.Succeeded)
+            {
+                return Ok(new AuthResponseDto
+                {
+                    IsSuccess = true,
+                    Message = "Password reset Successfully"
+                });
+            }
+
+            return BadRequest(new AuthResponseDto
+            {
+                IsSuccess = false,
+                Message = result.Errors.FirstOrDefault()!.Description
+            });
+        }
+
         private string GenerateToken(AppUser user){
             var tokenHandler = new JwtSecurityTokenHandler();
             
