@@ -232,7 +232,6 @@ namespace API.Controllers
 
         [AllowAnonymous]
         [HttpPost("refresh-token")]
-
         public async Task<ActionResult<AuthResponseDto>> RefreshToken(TokenDto tokenDto)
         {
             if (!ModelState.IsValid)
@@ -311,7 +310,7 @@ namespace API.Controllers
             var tokenDescriptor = new SecurityTokenDescriptor
             {
                 Subject = new ClaimsIdentity(claims),
-                Expires = DateTime.UtcNow.AddMinutes(60),
+                Expires = DateTime.UtcNow.AddMinutes(15),
                 SigningCredentials = new SigningCredentials(
                     new SymmetricSecurityKey(key),
                     SecurityAlgorithms.HmacSha256
