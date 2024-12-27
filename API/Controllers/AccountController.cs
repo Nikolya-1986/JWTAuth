@@ -10,6 +10,7 @@ using API.Dtos;
 using RestSharp;
 using System.Net;
 using Helpers;
+using System.Security.Cryptography;
 
 namespace API.Controllers
 {
@@ -84,14 +85,14 @@ namespace API.Controllers
 
         public async Task<ActionResult<AuthResponseDto>> Login(LoginDto loginDto)
         {
-            if (!ModelState.IsValid)
+            if(!ModelState.IsValid)
             {
-                return BadRequest(ModelState);
+               return BadRequest(ModelState);
             }
 
             var user = await _userManager.FindByEmailAsync(loginDto.Email);
 
-            if (user is null)
+            if(user is null)
             {
                 return Unauthorized(new AuthResponseDto{
                     IsSuccess = false,
@@ -99,22 +100,29 @@ namespace API.Controllers
                 });
             }
 
-            var result = await _userManager.CheckPasswordAsync(user, loginDto.Password);
+            var result = await _userManager.CheckPasswordAsync(user,loginDto.Password);
 
-            if (!result){
+            if(!result){
                 return Unauthorized(new AuthResponseDto{
-                    IsSuccess = false,
-                    Message = "Invalid Password."
+                    IsSuccess=false,
+                    Message= "Invalid Password."
                 });
             }
 
             
-            var token = GenerateToken(user);
+            var token = GenerateAccessToken(user);
+            var refreshToken = GenerateRefreshToken();
+            _ = int.TryParse(_configuration.GetSection("JWTSetting").GetSection("RefreshTokenValidityIn").Value!, out int RefreshTokenValidityIn);
+            user.RefreshToken = refreshToken;
+            user.RefreshTokenExpiryTime = DateTime.UtcNow.AddMinutes(RefreshTokenValidityIn);
+            await _userManager.UpdateAsync(user);
 
-            return Ok(new AuthResponseDto {
-                Token = token,
+            return Ok(new AuthResponseDto{
+                AccessToken = token,
                 IsSuccess = true,
-                Message = "Login Success."
+                Message = "Login Success.",
+                RefreshToken = refreshToken
+
             });
         }
 
@@ -222,7 +230,64 @@ namespace API.Controllers
             });
         }
 
-        private string GenerateToken(AppUser user){
+        [AllowAnonymous]
+        [HttpPost("refresh-token")]
+
+        public async Task<ActionResult<AuthResponseDto>> RefreshToken(TokenDto tokenDto)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            var principal = GetPrincipalFromExpiredToken(tokenDto.AccessToken);
+            var user = await _userManager.FindByEmailAsync(tokenDto.Email);
+
+            if (principal is null || user is null || user.RefreshToken != tokenDto.RefreshToken || user.RefreshTokenExpiryTime <= DateTime.UtcNow)
+                return BadRequest(new AuthResponseDto
+                {
+                    IsSuccess = false,
+                    Message = "Invalid client request"
+                });
+
+            var newJwtToken = GenerateAccessToken(user);
+            var newRefreshToken = GenerateRefreshToken();
+            _ = int.TryParse(_configuration.GetSection("JWTSetting").GetSection("RefreshTokenValidityIn").Value!, out int RefreshTokenValidityIn);
+
+            user.RefreshToken = newRefreshToken;
+            user.RefreshTokenExpiryTime = DateTime.UtcNow.AddMinutes(RefreshTokenValidityIn);
+
+            await _userManager.UpdateAsync(user);
+
+            return Ok(new AuthResponseDto
+            {
+                IsSuccess = true,
+                AccessToken = newJwtToken,
+                RefreshToken = newRefreshToken,
+                Message = "Refreshed token successfully"
+            });
+        }
+
+        private ClaimsPrincipal? GetPrincipalFromExpiredToken(string token)
+        {
+            var tokenParameters = new TokenValidationParameters
+            {
+                ValidateAudience = false,
+                ValidateIssuer = false,
+                ValidateIssuerSigningKey = true,
+                IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration.GetSection("JwtSetting").GetSection("securityKey").Value!)),
+                ValidateLifetime = false
+            };
+
+            var tokenHandler = new JwtSecurityTokenHandler();
+            var principal = tokenHandler.ValidateToken(token, tokenParameters, out SecurityToken securityToken);
+
+            if (securityToken is not JwtSecurityToken jwtSecurityToken || !jwtSecurityToken.Header.Alg.Equals(SecurityAlgorithms.HmacSha256, StringComparison.InvariantCultureIgnoreCase))
+                throw new SecurityTokenException("Invalid Access Token");
+
+            return principal;
+        }
+        private string GenerateAccessToken(AppUser user){
             var tokenHandler = new JwtSecurityTokenHandler();
             
             var key = Encoding.ASCII.GetBytes(_configuration.GetSection("JWTSetting").GetSection("securityKey").Value!);
@@ -256,6 +321,14 @@ namespace API.Controllers
             var token = tokenHandler.CreateToken(tokenDescriptor);
 
             return tokenHandler.WriteToken(token);
+        }
+
+        private string GenerateRefreshToken()
+        {
+            var randomNumber = new byte[32];
+            using var rng = RandomNumberGenerator.Create();
+            rng.GetBytes(randomNumber);
+            return Convert.ToBase64String(randomNumber);
         }
     }
 }
