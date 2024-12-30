@@ -1,17 +1,19 @@
-using System.Text;
-using API.Data;
-using API.Models;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using System.Text;
+using API.Models;
+using API.Data;
+using API.Controllers;
 
 var builder = WebApplication.CreateBuilder(args);
 
 var JWTSetting = builder.Configuration.GetSection("JWTSetting");
 
 // Add services to the container.
+builder.Services.AddSignalR();
 builder.Services.AddDbContext<AppDbContext>(opt=>opt.UseSqlite("Data Source=auth.db"));
 
 builder.Services.AddIdentity<AppUser,IdentityRole>().AddEntityFrameworkStores<AppDbContext>()
